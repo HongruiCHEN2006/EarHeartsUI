@@ -1,0 +1,1560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Heart Audio Recorder</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        height: 100vh;
+        background: #e6f0fa;
+        overflow: hidden;
+    }
+    #sidebar {
+        width: 320px;
+        background: rgba(255,255,255,0.7);
+        padding: 15px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid #ccc;
+        overflow-y: auto;
+    }
+    #main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 15px;
+        box-sizing: border-box;
+        min-width: 0;
+    }
+    button {
+        margin: 8px 0;
+        padding: 15px;
+        font-size: 16px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        background: #f0f8ff;
+        cursor: pointer;
+    }
+    button:hover {
+        background: #e0f0ff;
+    }
+    button:disabled {
+        background: #cccccc;
+        cursor: not-allowed;
+    }
+    button.save-btn {
+        background: #4CAF50;
+        color: white;
+        font-weight: bold;
+    }
+    button.save-btn:hover {
+        background: #45a049;
+    }
+    button.save-btn:disabled {
+        background: #cccccc;
+        color: #666;
+    }
+    button.export-btn {
+        background: #17a2b8;
+        color: white;
+    }
+    button.export-btn:hover {
+        background: #138496;
+    }
+    ul {
+        list-style: none;
+        padding: 0;
+        overflow-y: auto;
+        background: rgba(255,255,255,0.7);
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        max-height: 200px;
+    }
+    li {
+        padding: 8px 12px;
+        cursor: pointer;
+        border-bottom: 1px solid #eee;
+        font-size: 14px;
+    }
+    li:hover {
+        background-color: #f0f8ff;
+    }
+    li.selected {
+        background-color: #99ccff;
+        font-weight: bold;
+    }
+    .patient-info {
+        background: rgba(255,255,255,0.9);
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        padding: 15px;
+        margin: 10px 0;
+    }
+    .patient-info h3 {
+        margin: 0 0 15px 0;
+        color: #2E86AB;
+        font-size: 18px;
+    }
+    .form-group {
+        margin-bottom: 12px;
+    }
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #333;
+    }
+    .form-group input, .form-group select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 14px;
+        box-sizing: border-box;
+    }
+    .patient-summary {
+        background: #f8f9fa;
+        padding: 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        color: #666;
+        margin-top: 5px;
+    }
+    .status-indicator {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: bold;
+        margin-left: 8px;
+    }
+    .status-recorded {
+        background: #d4edda;
+        color: #155724;
+    }
+    .status-no-recording {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    .status-notes-saved {
+        background: #cce7ff;
+        color: #004085;
+    }
+    .status-notes-unsaved {
+        background: #fff3cd;
+        color: #856404;
+    }
+    .notes-section {
+        margin-top: 15px;
+    }
+    .notes-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    .notes-header h4 {
+        margin: 0;
+        color: #2E86AB;
+    }
+    .notes-status {
+        font-size: 12px;
+        padding: 4px 8px;
+        border-radius: 4px;
+    }
+    .notes-saved {
+        background: #d4edda;
+        color: #155724;
+    }
+    .notes-modified {
+        background: #fff3cd;
+        color: #856404;
+    }
+    .notes-empty {
+        background: #f8f9fa;
+        color: #6c757d;
+    }
+    #note {
+        height: 120px;
+        width: 100%;
+        resize: none;
+        padding: 10px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        font-size: 14px;
+        margin-bottom: 10px;
+    }
+    .notes-actions {
+        display: flex;
+        gap: 10px;
+    }
+    .notes-actions button {
+        flex: 1;
+        margin: 0;
+        padding: 10px;
+        font-size: 14px;
+    }
+    .data-management {
+        margin-top: 20px;
+        border-top: 1px solid #ccc;
+        padding-top: 15px;
+    }
+    .data-management h4 {
+        margin: 0 0 10px 0;
+        color: #2E86AB;
+        font-size: 16px;
+    }
+    .data-management button {
+        font-size: 14px;
+        padding: 10px;
+    }
+    #language {
+        margin-bottom: 15px;
+        padding: 10px;
+        font-size: 16px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+    }
+    #recordingTimer {
+        background-color: #ffcccc;
+        padding: 15px;
+        text-align: center;
+        font-weight: bold;
+        display: none;
+        margin-bottom: 15px;
+        border-radius: 8px;
+        font-size: 18px;
+    }
+    #waveformContainer {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 500px;
+        background: rgba(255,255,255,0.8);
+        border-radius: 10px;
+        padding: 20px;
+        margin: 10px 0;
+    }
+    #waveform {
+        max-width: 100%;
+        max-height: 100%;
+        border: 2px solid #99ccff;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    /* Galaxy Tab A9+ 11寸 适配 */
+    @media screen and (min-width: 1200px) and (max-width: 1920px) {
+        #waveform {
+            width: 1400px !important;
+            height: 600px !important;
+        }
+        body {
+            font-size: 18px;
+        }
+        button {
+            padding: 20px;
+            font-size: 18px;
+        }
+        #sidebar {
+            width: 380px;
+            padding: 20px;
+        }
+    }
+
+    /* 模态框样式 */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+    }
+    .modal-content {
+        background-color: #fefefe;
+        margin: 10% auto;
+        padding: 30px;
+        border-radius: 10px;
+        width: 400px;
+        max-width: 90%;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    .modal-header h2 {
+        margin: 0;
+        color: #2E86AB;
+    }
+    .close {
+        color: #aaa;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    .close:hover {
+        color: #000;
+    }
+    .modal-buttons {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+    }
+    .modal-buttons button {
+        flex: 1;
+        margin: 0;
+    }
+
+    /* 确认对话框样式 */
+    .confirmation-modal .modal-content {
+        width: 350px;
+        text-align: center;
+    }
+    .confirmation-modal p {
+        margin: 20px 0;
+        font-size: 16px;
+        color: #333;
+    }
+
+    /* 成功提示样式 */
+    .success-message {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #d4edda;
+        color: #155724;
+        padding: 15px 20px;
+        border-radius: 5px;
+        border: 1px solid #c3e6cb;
+        z-index: 1001;
+        animation: slideIn 0.3s ease-out;
+    }
+    
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+</style>
+</head>
+<body>
+<div id="sidebar">
+    <select id="language">
+        <option value="English">English</option>
+        <option value="Deutsch">Deutsch</option>
+    </select>
+    
+    <button id="addPatientBtn">Add Patient</button>
+    <button id="deletePatientBtn">Delete Patient</button>
+    
+    <label style="margin: 10px 0; font-weight: bold;">Patient List:</label>
+    <ul id="patientList"></ul>
+    
+    <!-- 患者信息编辑区域 -->
+    <div id="patientInfoSection" class="patient-info" style="display: none;">
+        <h3>Patient Information</h3>
+        <div class="form-group">
+            <label for="patientName">Name:</label>
+            <input type="text" id="patientName" readonly>
+        </div>
+        <div class="form-group">
+            <label for="patientAge">Age:</label>
+            <input type="number" id="patientAge" min="0" max="150" placeholder="Enter age">
+        </div>
+        <div class="form-group">
+            <label for="patientSex">Sex:</label>
+            <select id="patientSex">
+                <option value="">Select...</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- 数据管理区域 -->
+    <div class="data-management">
+        <h4>Data Management</h4>
+        <button id="exportPatientBtn" class="export-btn">Export Patient Data</button>
+        <button id="exportAllBtn" class="export-btn">Export All Patients</button>
+        <button id="importDataBtn">Import Data</button>
+        <input type="file" id="importFileInput" accept=".json" style="display: none;">
+    </div>
+</div>
+
+<div id="main">
+    <button id="recordBtn">Start Recording</button>
+    <div id="recordingTimer">Recording: 0s / 60s</div>
+    <div id="waveformContainer">
+        <canvas id="waveform" width="1400" height="600"></canvas>
+    </div>
+    
+    <!-- 医生笔记区域 -->
+    <div class="notes-section">
+        <div class="notes-header">
+            <h4>Doctor's Notes</h4>
+            <div id="notesStatus" class="notes-status notes-empty">No notes</div>
+        </div>
+        <textarea id="note" placeholder="Enter diagnosis and observations here..."></textarea>
+        <div class="notes-actions">
+            <button id="clearNotesBtn">Clear Notes</button>
+            <button id="saveNotesBtn" class="save-btn" disabled>Save Notes</button>
+        </div>
+    </div>
+</div>
+
+<!-- 新增患者模态框 -->
+<div id="addPatientModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Add New Patient</h2>
+            <span class="close">&times;</span>
+        </div>
+        <div class="form-group">
+            <label for="newPatientName">Name:</label>
+            <input type="text" id="newPatientName" placeholder="Enter patient name" required>
+        </div>
+        <div class="form-group">
+            <label for="newPatientAge">Age:</label>
+            <input type="number" id="newPatientAge" min="0" max="150" placeholder="Enter age">
+        </div>
+        <div class="form-group">
+            <label for="newPatientSex">Sex:</label>
+            <select id="newPatientSex">
+                <option value="">Select...</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+        <div class="modal-buttons">
+            <button id="cancelBtn" type="button">Cancel</button>
+            <button id="confirmAddBtn" type="button">Add Patient</button>
+        </div>
+    </div>
+</div>
+
+<!-- 确认对话框 -->
+<div id="confirmationModal" class="modal confirmation-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Unsaved Changes</h2>
+        </div>
+        <p>You have unsaved notes. Do you want to save them before switching patients?</p>
+        <div class="modal-buttons">
+            <button id="discardChangesBtn">Discard</button>
+            <button id="saveChangesBtn" class="save-btn">Save & Switch</button>
+            <button id="cancelSwitchBtn">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const LANGUAGES = {
+    "English": {
+        "add_patient": "Add Patient",
+        "start_recording": "Start Recording",
+        "delete_patient": "Delete Patient",
+        "list_label": "Patient List:",
+        "select_patient_warning": "Please select a patient first!",
+        "recording": "Recording audio for {}...",
+        "finished": "Finished recording for {}.",
+        "patient_info": "Patient Information",
+        "name": "Name:",
+        "age": "Age:",
+        "sex": "Sex:",
+        "male": "Male",
+        "female": "Female",
+        "other": "Other",
+        "select": "Select...",
+        "patient_exists": "Patient already exists!",
+        "enter_name": "Please enter patient name!",
+        "doctors_notes": "Doctor's Notes",
+        "save_notes": "Save Notes",
+        "clear_notes": "Clear Notes",
+        "notes_saved": "Notes saved",
+        "notes_modified": "Modified",
+        "no_notes": "No notes",
+        "notes_placeholder": "Enter diagnosis and observations here...",
+        "unsaved_changes": "Unsaved Changes",
+        "unsaved_warning": "You have unsaved notes. Do you want to save them before switching patients?",
+        "discard": "Discard",
+        "save_switch": "Save & Switch",
+        "cancel": "Cancel",
+        "recorded": "Recorded",
+        "no_recording": "No Recording",
+        "data_management": "Data Management",
+        "export_patient": "Export Patient Data",
+        "export_all": "Export All Patients",
+        "import_data": "Import Data",
+        "export_success": "Data exported successfully!",
+        "import_success": "Data imported successfully!",
+        "no_patients_export": "No patients to export!",
+        "confirm_import": "Import {} patients? This will merge with existing data.",
+        "confirm_clear_notes": "Are you sure you want to clear all notes?",
+        "confirm_delete_patient": "Delete patient \"{}\"?"
+    },
+    "Deutsch": {
+        "add_patient": "Patient hinzufügen",
+        "start_recording": "Aufnahme starten",
+        "delete_patient": "Patient löschen",
+        "list_label": "Patientenliste:",
+        "select_patient_warning": "Bitte wählen Sie zuerst einen Patienten aus!",
+        "recording": "Audioaufnahme für {} läuft...",
+        "finished": "Aufnahme für {} abgeschlossen.",
+        "notes_placeholder": "Diagnose und Beobachtungen hier eingeben...",
+        "recording_timer": "Aufnahme: {}s / 60s",
+        "patient_exists": "Patient existiert bereits!",
+        "recording_failed": "Aufnahme fehlgeschlagen: ",
+        "patient_info": "Patienteninformation",
+        "name": "Name:",
+        "age": "Alter:",
+        "sex": "Geschlecht:",
+        "male": "Männlich",
+        "female": "Weiblich",
+        "other": "Andere",
+        "select": "Auswählen...",
+        "enter_name": "Bitte Patientenname eingeben!",
+        "doctors_notes": "Arztnotizen",
+        "save_notes": "Notizen speichern",
+        "clear_notes": "Notizen löschen",
+        "notes_saved": "Notizen gespeichert",
+        "notes_modified": "Geändert",
+        "no_notes": "Keine Notizen",
+        "unsaved_changes": "Ungespeicherte Änderungen",
+        "unsaved_warning": "Sie haben ungespeicherte Notizen. Möchten Sie diese speichern, bevor Sie den Patienten wechseln?",
+        "discard": "Verwerfen",
+        "save_switch": "Speichern & Wechseln",
+        "cancel": "Abbrechen",
+        "recorded": "Aufgenommen",
+        "no_recording": "Keine Aufnahme",
+        "data_management": "Datenverwaltung",
+        "export_patient": "Patientendaten exportieren",
+        "export_all": "Alle Patienten exportieren",
+        "import_data": "Daten importieren",
+        "export_success": "Daten erfolgreich exportiert!",
+        "import_success": "Daten erfolgreich importiert!",
+        "no_patients_export": "Keine Patienten zum Exportieren!",
+        "confirm_import": "{} Patienten importieren? Dies wird mit vorhandenen Daten zusammengeführt.",
+        "confirm_clear_notes": "Sind Sie sicher, dass Sie alle Notizen löschen möchten?",
+        "confirm_delete_patient": "Patient \"{}\" löschen?"
+    }
+};
+
+let currentLang = "English";
+let patients = {};
+let selectedPatient = null;
+let currentNotesContent = "";
+let originalNotesContent = "";
+let pendingPatientSwitch = null;
+
+// DOM 元素
+const patientList = document.getElementById('patientList');
+const addPatientBtn = document.getElementById('addPatientBtn');
+const deletePatientBtn = document.getElementById('deletePatientBtn');
+const recordBtn = document.getElementById('recordBtn');
+const noteArea = document.getElementById('note');
+const languageSelect = document.getElementById('language');
+const recordingTimer = document.getElementById('recordingTimer');
+
+// 患者信息相关元素
+const patientInfoSection = document.getElementById('patientInfoSection');
+const patientNameInput = document.getElementById('patientName');
+const patientAgeInput = document.getElementById('patientAge');
+const patientSexSelect = document.getElementById('patientSex');
+
+// 笔记相关元素
+const notesStatus = document.getElementById('notesStatus');
+const saveNotesBtn = document.getElementById('saveNotesBtn');
+const clearNotesBtn = document.getElementById('clearNotesBtn');
+
+// 数据管理相关元素
+const exportPatientBtn = document.getElementById('exportPatientBtn');
+const exportAllBtn = document.getElementById('exportAllBtn');
+const importDataBtn = document.getElementById('importDataBtn');
+const importFileInput = document.getElementById('importFileInput');
+
+// 模态框相关元素
+const addPatientModal = document.getElementById('addPatientModal');
+const newPatientName = document.getElementById('newPatientName');
+const newPatientAge = document.getElementById('newPatientAge');
+const newPatientSex = document.getElementById('newPatientSex');
+const closeModal = document.querySelector('.close');
+const cancelBtn = document.getElementById('cancelBtn');
+const confirmAddBtn = document.getElementById('confirmAddBtn');
+
+// 确认对话框元素
+const confirmationModal = document.getElementById('confirmationModal');
+const discardChangesBtn = document.getElementById('discardChangesBtn');
+const saveChangesBtn = document.getElementById('saveChangesBtn');
+const cancelSwitchBtn = document.getElementById('cancelSwitchBtn');
+
+const ctx = document.getElementById('waveform').getContext('2d');
+
+let chart = new Chart(ctx, {
+    type: 'line',
+    data: { 
+        labels: [], 
+        datasets: [{ 
+            label: 'Heartbeat (30-40s, Filtered 10-100Hz)', 
+            data: [], 
+            borderColor: '#2E86AB', 
+            backgroundColor: 'rgba(46, 134, 171, 0.1)',
+            borderWidth: 2, 
+            fill: true,
+            pointRadius: 0,
+            tension: 0.1
+        }]
+    },
+    options: { 
+        responsive: true, 
+        maintainAspectRatio: false,
+        animation: false, 
+        interaction: {
+            intersect: false,
+            mode: 'index'
+        },
+        plugins: {
+            legend: {
+                display: true,
+                labels: {
+                    font: {
+                        size: 14
+                    }
+                }
+            },
+            title: {
+                display: true,
+                text: 'Filtered Heartbeat Analysis (10-100Hz)',
+                font: {
+                    size: 16,
+                    weight: 'bold'
+                }
+            }
+        },
+        scales: { 
+            x: { 
+                title: { 
+                    display: true, 
+                    text: 'Time (seconds)',
+                    font: {
+                        size: 14,
+                        weight: 'bold'
+                    }
+                },
+                grid: {
+                    color: 'rgba(0,0,0,0.1)'
+                }
+            }, 
+            y: { 
+                title: { 
+                    display: true, 
+                    text: 'Amplitude',
+                    font: {
+                        size: 14,
+                        weight: 'bold'
+                    }
+                },
+                grid: {
+                    color: 'rgba(0,0,0,0.1)'
+                }
+            } 
+        } 
+    }
+});
+
+// ----------------------
+// 数据处理函数
+// ----------------------
+function downsample(array, factor) {
+    const result = [];
+    for (let i = 0; i < array.length; i += factor) {
+        result.push(array[i]);
+    }
+    return result;
+}
+
+function removeDCOffset(data) {
+    const mean = data.reduce((sum, val) => sum + val, 0) / data.length;
+    return data.map(val => val - mean);
+}
+
+function applyHanningWindow(data, windowSize = 1000) {
+    const windowed = [...data];
+    const halfWindow = Math.floor(windowSize / 2);
+    
+    for (let i = 0; i < Math.min(halfWindow, windowed.length); i++) {
+        const windowVal = 0.5 * (1 - Math.cos(2 * Math.PI * i / windowSize));
+        windowed[i] *= windowVal;
+    }
+    
+    for (let i = Math.max(0, windowed.length - halfWindow); i < windowed.length; i++) {
+        const windowVal = 0.5 * (1 - Math.cos(2 * Math.PI * (windowed.length - 1 - i) / windowSize));
+        windowed[i] *= windowVal;
+    }
+    
+    return windowed;
+}
+
+function highOrderBandpassFilter(data, lowCutoff, highCutoff, sampleRate, order = 4) {
+    let filteredData = [...data];
+    
+    for (let i = 0; i < order; i++) {
+        filteredData = highPassFilterStage(filteredData, lowCutoff, sampleRate);
+        filteredData = lowPassFilterStage(filteredData, highCutoff, sampleRate);
+    }
+    
+    return filteredData;
+}
+
+function highPassFilterStage(data, cutoffHz, sampleRate) {
+    const nyquist = sampleRate / 2;
+    const normalizedCutoff = cutoffHz / nyquist;
+    
+    const omega = Math.tan(Math.PI * normalizedCutoff / 2);
+    const k = 1 / (1 + Math.sqrt(2) * omega + omega * omega);
+    
+    const a0 = k;
+    const a1 = -2 * k;
+    const a2 = k;
+    const b1 = 2 * k * (omega * omega - 1);
+    const b2 = k * (1 - Math.sqrt(2) * omega + omega * omega);
+    
+    const filtered = new Array(data.length);
+    
+    const initialValue = data.slice(0, 10).reduce((sum, val) => sum + val, 0) / 10;
+    filtered[0] = initialValue;
+    filtered[1] = data[1];
+    
+    for (let i = 2; i < data.length; i++) {
+        filtered[i] = a0 * data[i] + a1 * data[i-1] + a2 * data[i-2] 
+                     - b1 * filtered[i-1] - b2 * filtered[i-2];
+    }
+    
+    return filtered;
+}
+
+function lowPassFilterStage(data, cutoffHz, sampleRate) {
+    const nyquist = sampleRate / 2;
+    const normalizedCutoff = cutoffHz / nyquist;
+    
+    const omega = Math.tan(Math.PI * normalizedCutoff / 2);
+    const k = 1 / (1 + Math.sqrt(2) * omega + omega * omega);
+    
+    const a0 = k * omega * omega;
+    const a1 = 2 * a0;
+    const a2 = a0;
+    const b1 = 2 * k * (omega * omega - 1);
+    const b2 = k * (1 - Math.sqrt(2) * omega + omega * omega);
+    
+    const filtered = new Array(data.length);
+    
+    const initialValue = data.slice(0, 10).reduce((sum, val) => sum + val, 0) / 10;
+    filtered[0] = initialValue;
+    filtered[1] = data[1];
+    
+    for (let i = 2; i < data.length; i++) {
+        filtered[i] = a0 * data[i] + a1 * data[i-1] + a2 * data[i-2] 
+                     - b1 * filtered[i-1] - b2 * filtered[i-2];
+    }
+    
+    return filtered;
+}
+
+function zeroPhaseFilter(data, lowCutoff, highCutoff, sampleRate) {
+    let forward = highOrderBandpassFilter(data, lowCutoff, highCutoff, sampleRate, 3);
+    let reversed = forward.slice().reverse();
+    let backward = highOrderBandpassFilter(reversed, lowCutoff, highCutoff, sampleRate, 3);
+    let result = backward.slice().reverse();
+    
+    return result;
+}
+
+function processHeartSoundData(data, sampleRate) {
+    let processed = removeDCOffset(data);
+    processed = zeroPhaseFilter(processed, 10, 100, sampleRate);
+    processed = applyHanningWindow(processed, 2000);
+    
+    const transientSamples = Math.floor(0.5 * sampleRate);
+    if (processed.length > 2 * transientSamples) {
+        processed = processed.slice(transientSamples, -transientSamples);
+    }
+    
+    return processed;
+}
+
+function extractAndProcessMiddleSegment(data, sampleRate) {
+    const startSample = Math.floor(25 * sampleRate);
+    const endSample = Math.floor(45 * sampleRate);
+    let extendedData = data.slice(startSample, endSample);
+    
+    let processedData = processHeartSoundData(extendedData, sampleRate);
+    
+    const processedStartSample = Math.floor(2.5 * sampleRate);
+    const processedEndSample = Math.floor(12.5 * sampleRate);
+    
+    if (processedData.length > processedEndSample) {
+        return processedData.slice(processedStartSample, processedEndSample);
+    } else {
+        return processedData;
+    }
+}
+
+// ----------------------
+// 工具函数
+// ----------------------
+function showSuccessMessage(message) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'success-message';
+    messageDiv.textContent = message;
+    document.body.appendChild(messageDiv);
+    
+    setTimeout(() => {
+        messageDiv.remove();
+    }, 3000);
+}
+
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleString();
+}
+
+// ----------------------
+// 笔记管理函数
+// ----------------------
+function updateNotesStatus() {
+    const lang = LANGUAGES[currentLang];
+    
+    if (!currentNotesContent.trim()) {
+        notesStatus.textContent = lang.no_notes;
+        notesStatus.className = "notes-status notes-empty";
+        saveNotesBtn.disabled = true;
+    } else if (currentNotesContent === originalNotesContent) {
+        notesStatus.textContent = lang.notes_saved;
+        notesStatus.className = "notes-status notes-saved";
+        saveNotesBtn.disabled = true;
+    } else {
+        notesStatus.textContent = lang.notes_modified;
+        notesStatus.className = "notes-status notes-modified";
+        saveNotesBtn.disabled = false;
+    }
+}
+
+function saveNotes() {
+    if (selectedPatient) {
+        patients[selectedPatient].note = currentNotesContent;
+        patients[selectedPatient].lastModified = new Date().toISOString();
+        originalNotesContent = currentNotesContent;
+        updateNotesStatus();
+        refreshPatientList();
+        saveToLocalStorage();
+        
+        // 显示保存成功动画
+        const originalText = saveNotesBtn.textContent;
+        const originalBg = saveNotesBtn.style.background;
+        saveNotesBtn.textContent = "Saved!";
+        saveNotesBtn.style.background = "#28a745";
+        setTimeout(() => {
+            saveNotesBtn.textContent = originalText;
+            saveNotesBtn.style.background = originalBg;
+        }, 1500);
+    }
+}
+
+function clearNotes() {
+    const lang = LANGUAGES[currentLang];
+    if (confirm(lang.confirm_clear_notes)) {
+        noteArea.value = "";
+        currentNotesContent = "";
+        updateNotesStatus();
+    }
+}
+
+function hasUnsavedNotes() {
+    return currentNotesContent !== originalNotesContent && currentNotesContent.trim() !== "";
+}
+
+// ----------------------
+// 数据导出/导入功能
+// ----------------------
+function exportPatientData() {
+    if (!selectedPatient) {
+        alert(LANGUAGES[currentLang].select_patient_warning);
+        return;
+    }
+    
+    const patient = patients[selectedPatient];
+    const patientData = {
+        name: selectedPatient,
+        age: patient.age,
+        sex: patient.sex,
+        notes: patient.note,
+        recordingDate: patient.recordingDate || null,
+        lastModified: patient.lastModified || null,
+        hasRecording: !!patient.waveform
+    };
+    
+    // 创建详细的文本报告
+    const content = `PATIENT MEDICAL REPORT
+==========================================
+Patient Name: ${patientData.name}
+Age: ${patientData.age || 'Not specified'}
+Sex: ${patientData.sex || 'Not specified'}
+Recording Date: ${formatDate(patientData.recordingDate)}
+Last Modified: ${formatDate(patientData.lastModified)}
+Has Audio Recording: ${patientData.hasRecording ? 'Yes' : 'No'}
+
+DOCTOR'S NOTES:
+==========================================
+${patientData.notes || 'No notes recorded.'}
+
+TECHNICAL INFORMATION:
+==========================================
+Heart sound recording duration: 60 seconds
+Analysis segment: 30-40 seconds (filtered 10-100Hz)
+Export date: ${formatDate(new Date().toISOString())}
+Generated by: Heart Audio Recorder System`;
+    
+    // 下载文本报告
+    downloadTextFile(content, `${selectedPatient}_Medical_Report.txt`);
+    
+    // 同时导出JSON格式备份
+    downloadJsonFile(patientData, `${selectedPatient}_Backup_Data.json`);
+    
+    showSuccessMessage(LANGUAGES[currentLang].export_success);
+}
+
+function exportAllPatients() {
+    const lang = LANGUAGES[currentLang];
+    
+    if (Object.keys(patients).length === 0) {
+        alert(lang.no_patients_export);
+        return;
+    }
+    
+    const allPatientsData = {
+        exportDate: new Date().toISOString(),
+        exportVersion: "1.0",
+        totalPatients: Object.keys(patients).length,
+        patients: {}
+    };
+    
+    // 处理每个患者数据
+    for (let name in patients) {
+        allPatientsData.patients[name] = {
+            age: patients[name].age,
+            sex: patients[name].sex,
+            notes: patients[name].note,
+            recordingDate: patients[name].recordingDate || null,
+            lastModified: patients[name].lastModified || null,
+            hasRecording: !!patients[name].waveform
+        };
+    }
+    
+    // 创建详细的汇总报告
+    let summaryContent = "ALL PATIENTS MEDICAL REPORT\n";
+    summaryContent += "==========================================\n";
+    summaryContent += "Export Date: " + formatDate(allPatientsData.exportDate) + "\n";
+    summaryContent += "Total Patients: " + allPatientsData.totalPatients + "\n";
+    summaryContent += "Generated by: Heart Audio Recorder System\n\n";
+    
+    let patientIndex = 1;
+    for (let name in allPatientsData.patients) {
+        const patient = allPatientsData.patients[name];
+        
+        summaryContent += "==========================================\n";
+        summaryContent += patientIndex + ". PATIENT: " + name + "\n";
+        summaryContent += "==========================================\n";
+        summaryContent += "Age: " + (patient.age || 'Not specified') + "\n";
+        summaryContent += "Sex: " + (patient.sex || 'Not specified') + "\n";
+        summaryContent += "Has Audio Recording: " + (patient.hasRecording ? 'Yes' : 'No') + "\n";
+        summaryContent += "Recording Date: " + formatDate(patient.recordingDate) + "\n";
+        summaryContent += "Last Modified: " + formatDate(patient.lastModified) + "\n\n";
+        summaryContent += "DOCTOR'S NOTES:\n";
+        summaryContent += (patient.notes ? patient.notes : 'No notes recorded.') + "\n\n";
+        
+        patientIndex++;
+    }
+    
+    summaryContent += "==========================================\n";
+    summaryContent += "END OF REPORT\n";
+    summaryContent += "Generated on: " + formatDate(new Date().toISOString()) + "\n";
+    
+    // 下载详细报告和JSON备份
+    const dateStr = new Date().toISOString().split('T')[0];
+    downloadTextFile(summaryContent, "All_Patients_Medical_Report_" + dateStr + ".txt");
+    downloadJsonFile(allPatientsData, "All_Patients_Backup_" + dateStr + ".json");
+    
+    showSuccessMessage(lang.export_success);
+}
+
+function importPatientData() {
+    importFileInput.click();
+}
+
+function handleFileImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const importedData = JSON.parse(e.target.result);
+            const lang = LANGUAGES[currentLang];
+            
+            if (importedData.patients) {
+                // 导入所有患者数据
+                const importCount = Object.keys(importedData.patients).length;
+                if (confirm(lang.confirm_import.replace('{}', importCount))) {
+                    let actualImported = 0;
+                    for (let name in importedData.patients) {
+                        if (!patients[name]) {
+                            patients[name] = {
+                                age: importedData.patients[name].age || '',
+                                sex: importedData.patients[name].sex || '',
+                                note: importedData.patients[name].notes || '',
+                                recordingDate: importedData.patients[name].recordingDate || null,
+                                lastModified: importedData.patients[name].lastModified || null,
+                                waveform: null // 音频数据不导入
+                            };
+                            actualImported++;
+                        }
+                    }
+                    refreshPatientList();
+                    saveToLocalStorage();
+                    showSuccessMessage(`${lang.import_success} (${actualImported} patients)`);
+                }
+            } else if (importedData.name) {
+                // 导入单个患者数据
+                if (confirm(`Import patient "${importedData.name}"?`)) {
+                    patients[importedData.name] = {
+                        age: importedData.age || '',
+                        sex: importedData.sex || '',
+                        note: importedData.notes || '',
+                        recordingDate: importedData.recordingDate || null,
+                        lastModified: importedData.lastModified || null,
+                        waveform: null
+                    };
+                    selectedPatient = importedData.name;
+                    refreshPatientList();
+                    loadPatientData();
+                    saveToLocalStorage();
+                    showSuccessMessage(lang.import_success);
+                }
+            } else {
+                alert("Invalid file format!");
+            }
+        } catch (error) {
+            alert("Error importing file: " + error.message);
+        }
+    };
+    reader.readAsText(file);
+    
+    // 清除input以允许重复导入同一文件
+    event.target.value = '';
+}
+
+function downloadTextFile(content, filename) {
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function downloadJsonFile(data, filename) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// ----------------------
+// 患者管理函数
+// ----------------------
+function refreshPatientList() {
+    patientList.innerHTML = '';
+    for (let name in patients) {
+        const li = document.createElement('li');
+        const patient = patients[name];
+        
+        // 创建状态指示器
+        let recordingStatus = "";
+        let notesStatus = "";
+        
+        if (patient.waveform) {
+            recordingStatus = `<span class="status-indicator status-recorded">${LANGUAGES[currentLang].recorded || 'Recorded'}</span>`;
+        } else {
+            recordingStatus = `<span class="status-indicator status-no-recording">${LANGUAGES[currentLang].no_recording || 'No Recording'}</span>`;
+        }
+        
+        if (patient.note && patient.note.trim()) {
+            notesStatus = `<span class="status-indicator status-notes-saved">${LANGUAGES[currentLang].notes_saved || 'Notes'}</span>`;
+        }
+        
+        li.innerHTML = `
+            <div><strong>${name}</strong> ${recordingStatus} ${notesStatus}</div>
+            <div class="patient-summary">
+                Age: ${patient.age || 'N/A'} | Sex: ${patient.sex || 'N/A'}
+                ${patient.lastModified ? ' | Modified: ' + formatDate(patient.lastModified) : ''}
+            </div>
+        `;
+        
+        if (name === selectedPatient) li.classList.add('selected');
+        li.onclick = () => selectPatient(name);
+        patientList.appendChild(li);
+    }
+}
+
+function selectPatient(name) {
+    if (name === selectedPatient) return;
+    
+    if (hasUnsavedNotes()) {
+        // 显示确认对话框
+        pendingPatientSwitch = name;
+        confirmationModal.style.display = 'block';
+        return;
+    }
+    
+    // 直接切换患者
+    selectedPatient = name;
+    refreshPatientList();
+    loadPatientData();
+}
+
+function loadPatientData() {
+    if (!selectedPatient) {
+        patientInfoSection.style.display = 'none';
+        noteArea.value = "";
+        currentNotesContent = "";
+        originalNotesContent = "";
+        updateNotesStatus();
+        return;
+    }
+    
+    const patient = patients[selectedPatient];
+    
+    // 显示患者信息编辑区域
+    patientInfoSection.style.display = 'block';
+    
+    // 加载患者信息到表单
+    patientNameInput.value = selectedPatient;
+    patientAgeInput.value = patient.age || '';
+    patientSexSelect.value = patient.sex || '';
+    
+    // 加载笔记
+    noteArea.value = patient.note || '';
+    currentNotesContent = patient.note || '';
+    originalNotesContent = patient.note || '';
+    updateNotesStatus();
+    
+    // 加载波形数据
+    if (patient.waveform) {
+        let data = extractAndProcessMiddleSegment(patient.waveform, 48000);
+        data = downsample(data, 2);
+        const labels = data.map((_, i) => (30 + (i*25/48000)).toFixed(3));
+        
+        chart.data.labels = labels;
+        chart.data.datasets[0].data = data;
+        chart.update();
+    } else {
+        chart.data.labels = [];
+        chart.data.datasets[0].data = [];
+        chart.update();
+    }
+}
+
+// ----------------------
+// 模态框管理
+// ----------------------
+function openAddPatientModal() {
+    addPatientModal.style.display = 'block';
+    newPatientName.value = '';
+    newPatientAge.value = '';
+    newPatientSex.value = '';
+    newPatientName.focus();
+}
+
+function closeAddPatientModal() {
+    addPatientModal.style.display = 'none';
+}
+
+function addNewPatient() {
+    const name = newPatientName.value.trim();
+    const age = newPatientAge.value;
+    const sex = newPatientSex.value;
+    
+    if (!name) {
+        alert(LANGUAGES[currentLang].enter_name);
+        return;
+    }
+    
+    if (patients[name]) {
+        alert(LANGUAGES[currentLang].patient_exists);
+        return;
+    }
+    
+    // 创建新患者记录
+    patients[name] = {
+        age: age,
+        sex: sex,
+        note: "",
+        waveform: null,
+        lastModified: new Date().toISOString()
+    };
+    
+    selectedPatient = name;
+    refreshPatientList();
+    loadPatientData();
+    closeAddPatientModal();
+    saveToLocalStorage();
+}
+
+// ----------------------
+// 事件监听器
+// ----------------------
+addPatientBtn.onclick = openAddPatientModal;
+
+deletePatientBtn.onclick = () => {
+    const lang = LANGUAGES[currentLang];
+    if (!selectedPatient) { 
+        alert(lang.select_patient_warning); 
+        return; 
+    }
+    
+    if (confirm(lang.confirm_delete_patient.replace('{}', selectedPatient))) {
+        delete patients[selectedPatient];
+        selectedPatient = null;
+        refreshPatientList();
+        loadPatientData();
+        chart.data.labels = [];
+        chart.data.datasets[0].data = [];
+        chart.update();
+        saveToLocalStorage();
+    }
+};
+
+// 笔记相关事件
+noteArea.oninput = () => {
+    currentNotesContent = noteArea.value;
+    updateNotesStatus();
+};
+
+saveNotesBtn.onclick = saveNotes;
+clearNotesBtn.onclick = clearNotes;
+
+// 数据管理事件
+exportPatientBtn.onclick = exportPatientData;
+exportAllBtn.onclick = exportAllPatients;
+importDataBtn.onclick = importPatientData;
+importFileInput.onchange = handleFileImport;
+
+// 模态框事件
+closeModal.onclick = closeAddPatientModal;
+cancelBtn.onclick = closeAddPatientModal;
+confirmAddBtn.onclick = addNewPatient;
+
+// 确认对话框事件
+discardChangesBtn.onclick = () => {
+    confirmationModal.style.display = 'none';
+    selectedPatient = pendingPatientSwitch;
+    pendingPatientSwitch = null;
+    refreshPatientList();
+    loadPatientData();
+};
+
+saveChangesBtn.onclick = () => {
+    saveNotes();
+    confirmationModal.style.display = 'none';
+    selectedPatient = pendingPatientSwitch;
+    pendingPatientSwitch = null;
+    refreshPatientList();
+    loadPatientData();
+};
+
+cancelSwitchBtn.onclick = () => {
+    confirmationModal.style.display = 'none';
+    pendingPatientSwitch = null;
+};
+
+// 点击模态框外部关闭
+window.onclick = (event) => {
+    if (event.target === addPatientModal) {
+        closeAddPatientModal();
+    }
+    if (event.target === confirmationModal) {
+        confirmationModal.style.display = 'none';
+        pendingPatientSwitch = null;
+    }
+};
+
+// Enter键确认添加患者
+newPatientName.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') addNewPatient();
+});
+
+// 患者信息实时保存
+patientAgeInput.oninput = () => {
+    if (selectedPatient) {
+        patients[selectedPatient].age = patientAgeInput.value;
+        patients[selectedPatient].lastModified = new Date().toISOString();
+        refreshPatientList();
+        saveToLocalStorage();
+    }
+};
+
+patientSexSelect.onchange = () => {
+    if (selectedPatient) {
+        patients[selectedPatient].sex = patientSexSelect.value;
+        patients[selectedPatient].lastModified = new Date().toISOString();
+        refreshPatientList();
+        saveToLocalStorage();
+    }
+};
+
+// ----------------------
+// 录音功能
+// ----------------------
+recordBtn.onclick = async () => {
+    if (!selectedPatient) { 
+        alert(LANGUAGES[currentLang].select_patient_warning); 
+        return; 
+    }
+
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            audio: {
+                sampleRate: 48000,
+                echoCancellation: false,
+                noiseSuppression: false,
+                autoGainControl: false
+            } 
+        });
+        const mediaRecorder = new MediaRecorder(stream);
+        let chunks = [];
+        
+        recordingTimer.style.display = 'block';
+        recordBtn.disabled = true;
+        recordBtn.textContent = 'Recording...';
+        
+        let seconds = 0;
+        const timerInterval = setInterval(() => {
+            seconds++;
+            recordingTimer.textContent = `Recording: ${seconds}s / 60s`;
+            if (seconds >= 60) {
+                clearInterval(timerInterval);
+            }
+        }, 1000);
+        
+        mediaRecorder.ondataavailable = e => chunks.push(e.data);
+        mediaRecorder.start();
+
+        await new Promise(resolve => setTimeout(resolve, 60000));
+        mediaRecorder.stop();
+
+        await new Promise(resolve => {
+            mediaRecorder.onstop = async () => {
+                recordingTimer.style.display = 'none';
+                recordBtn.disabled = false;
+                recordBtn.textContent = LANGUAGES[currentLang].start_recording;
+                
+                const blob = new Blob(chunks, { type: 'audio/wav' });
+                const arrayBuffer = await blob.arrayBuffer();
+                const audioCtx = new AudioContext();
+                const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                const channelData = audioBuffer.getChannelData(0);
+                
+                // 保存录音数据和时间戳
+                patients[selectedPatient].waveform = Array.from(channelData);
+                patients[selectedPatient].recordingDate = new Date().toISOString();
+                patients[selectedPatient].lastModified = new Date().toISOString();
+                
+                loadPatientData();
+                refreshPatientList();
+                saveToLocalStorage();
+
+                // 下载音频文件，文件名包含患者信息和时间戳
+                const patient = patients[selectedPatient];
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+                const patientInfo = `${selectedPatient}_Age${patient.age || 'Unknown'}_${patient.sex || 'Unknown'}_${timestamp}`;
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${patientInfo}_HeartSound_60s.wav`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                resolve();
+            };
+        });
+
+        alert(LANGUAGES[currentLang].finished.replace("{}", selectedPatient));
+    } catch (err) {
+        recordingTimer.style.display = 'none';
+        recordBtn.disabled = false;
+        recordBtn.textContent = LANGUAGES[currentLang].start_recording;
+        alert("Recording failed: " + err.message);
+    }
+};
+
+// ----------------------
+// 语言切换
+// ----------------------
+languageSelect.onchange = () => {
+    currentLang = languageSelect.value;
+    updateLanguage();
+};
+
+function updateLanguage() {
+    const lang = LANGUAGES[currentLang];
+    
+    addPatientBtn.textContent = lang.add_patient;
+    deletePatientBtn.textContent = lang.delete_patient;
+    recordBtn.textContent = lang.start_recording;
+    noteArea.placeholder = lang.notes_placeholder;
+    
+    // 更新患者信息区域
+    document.querySelector('.patient-info h3').textContent = lang.patient_info;
+    document.querySelector('label[for="patientName"]').textContent = lang.name;
+    document.querySelector('label[for="patientAge"]').textContent = lang.age;
+    document.querySelector('label[for="patientSex"]').textContent = lang.sex;
+    
+    // 更新笔记区域
+    document.querySelector('.notes-header h4').textContent = lang.doctors_notes;
+    saveNotesBtn.textContent = lang.save_notes;
+    clearNotesBtn.textContent = lang.clear_notes;
+    
+    // 更新数据管理区域
+    document.querySelector('.data-management h4').textContent = lang.data_management;
+    exportPatientBtn.textContent = lang.export_patient;
+    exportAllBtn.textContent = lang.export_all;
+    importDataBtn.textContent = lang.import_data;
+    
+    // 更新选择选项
+    const sexOptions = patientSexSelect.querySelectorAll('option');
+    sexOptions[0].textContent = lang.select;
+    sexOptions[1].textContent = lang.male;
+    sexOptions[2].textContent = lang.female;
+    sexOptions[3].textContent = lang.other;
+    
+    // 更新新患者模态框的选择选项
+    const newSexOptions = newPatientSex.querySelectorAll('option');
+    newSexOptions[0].textContent = lang.select;
+    newSexOptions[1].textContent = lang.male;
+    newSexOptions[2].textContent = lang.female;
+    newSexOptions[3].textContent = lang.other;
+    
+    // 更新确认对话框
+    document.querySelector('#confirmationModal h2').textContent = lang.unsaved_changes;
+    document.querySelector('#confirmationModal p').textContent = lang.unsaved_warning;
+    discardChangesBtn.textContent = lang.discard;
+    saveChangesBtn.textContent = lang.save_switch;
+    cancelSwitchBtn.textContent = lang.cancel;
+    
+    updateNotesStatus();
+    refreshPatientList();
+}
+
+// ----------------------
+// 数据持久化
+// ----------------------
+function saveToLocalStorage() {
+    try {
+        // 保存患者数据（不包括音频波形，太大）
+        const patientsForStorage = {};
+        for (let name in patients) {
+            patientsForStorage[name] = {
+                age: patients[name].age,
+                sex: patients[name].sex,
+                note: patients[name].note,
+                recordingDate: patients[name].recordingDate,
+                lastModified: patients[name].lastModified,
+                hasWaveform: !!patients[name].waveform
+            };
+        }
+        localStorage.setItem('heartRecorderPatients', JSON.stringify(patientsForStorage));
+        localStorage.setItem('heartRecorderSelectedPatient', selectedPatient);
+    } catch (error) {
+        console.error('Error saving to localStorage:', error);
+    }
+}
+
+function loadFromLocalStorage() {
+    try {
+        const savedPatients = localStorage.getItem('heartRecorderPatients');
+        const savedSelected = localStorage.getItem('heartRecorderSelectedPatient');
+        
+        if (savedPatients) {
+            const parsedPatients = JSON.parse(savedPatients);
+            for (let name in parsedPatients) {
+                patients[name] = {
+                    ...parsedPatients[name],
+                    waveform: null // 音频数据不从localStorage恢复
+                };
+            }
+            refreshPatientList();
+        }
+        
+        if (savedSelected && patients[savedSelected]) {
+            selectedPatient = savedSelected;
+            refreshPatientList();
+            loadPatientData();
+        }
+    } catch (error) {
+        console.error('Error loading from localStorage:', error);
+    }
+}
+
+// ----------------------
+// 初始化和清理
+// ----------------------
+window.addEventListener('load', () => {
+    loadFromLocalStorage();
+    updateLanguage();
+});
+
+// 页面卸载时保存数据并提醒未保存的笔记
+window.addEventListener('beforeunload', (e) => {
+    saveToLocalStorage();
+    if (hasUnsavedNotes()) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved notes. Are you sure you want to leave?';
+        return e.returnValue;
+    }
+});
+
+// 定期自动保存
+setInterval(() => {
+    if (Object.keys(patients).length > 0) {
+        saveToLocalStorage();
+    }
+}, 30000); // 每30秒自动保存一次
+
+</script>
+</body>
+</html>
