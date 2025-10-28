@@ -7,6 +7,8 @@ export enum Sex {
 export enum Language {
   English = 'English',
   Deutsch = 'Deutsch',
+  French = 'fr',
+  Wolof = 'wo',
 }
 
 export interface Patient {

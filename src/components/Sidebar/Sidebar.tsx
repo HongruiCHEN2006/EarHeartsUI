@@ -57,6 +57,8 @@ export function Sidebar() {
         >
           <MenuItem value={Language.English}>English</MenuItem>
           <MenuItem value={Language.Deutsch}>Deutsch</MenuItem>
+          <MenuItem value={Language.French}>Français</MenuItem>
+          <MenuItem value={Language.Wolof}>Wolof</MenuItem>
         </Select>
       </FormControl>
 
