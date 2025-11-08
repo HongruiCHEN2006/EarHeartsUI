@@ -33,13 +33,13 @@ export function applyHanningWindow(data: number[], windowSize = 1000): number[] 
 
   return windowed;
 }
-
+//order
 export function highOrderBandpassFilter(
   data: number[],
   lowCutoff: number,
   highCutoff: number,
   sampleRate: number,
-  order = 4
+  order = 999
 ): number[] {
   let filteredData = [...data];
 
@@ -154,7 +154,9 @@ export function processHeartSoundData(
   sampleRate: number
 ): number[] {
   let processed = removeDCOffset(data);
-  processed = zeroPhaseFilter(processed, 10, 100, sampleRate);
+
+  //filter
+  processed = zeroPhaseFilter(processed, 1, 10, sampleRate);
   processed = applyHanningWindow(processed, 2000);
 
   const transientSamples = Math.floor(0.5 * sampleRate);
