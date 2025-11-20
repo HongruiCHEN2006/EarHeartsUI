@@ -156,7 +156,7 @@ export function processHeartSoundData(
   let processed = removeDCOffset(data);
 
   //filter
-  processed = zeroPhaseFilter(processed, 1, 10, sampleRate);
+  processed = zeroPhaseFilter(processed, 25, 45, sampleRate);
   processed = applyHanningWindow(processed, 2000);
 
   const transientSamples = Math.floor(0.5 * sampleRate);
