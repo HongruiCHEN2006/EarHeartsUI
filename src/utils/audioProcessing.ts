@@ -39,7 +39,7 @@ export function highOrderBandpassFilter(
   lowCutoff: number,
   highCutoff: number,
   sampleRate: number,
-  order = 999
+  order = 4
 ): number[] {
   let filteredData = [...data];
 
