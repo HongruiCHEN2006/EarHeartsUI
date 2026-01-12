@@ -58,6 +58,8 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
           name: patients[name].name,
           age: patients[name].age,
           sex: patients[name].sex,
+          deviceHeartRate: patients[name].deviceHeartRate,
+          doctorHeartRate: patients[name].doctorHeartRate,
           note: patients[name].note,
           recordingDate: patients[name].recordingDate,
           lastModified: patients[name].lastModified,
@@ -125,18 +127,35 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const updatePatientInfo = (field: 'age' | 'sex', value: string) => {
-    if (!selectedPatient) return;
+  // const updatePatientInfo = (field: 'age' | 'sex', value: string) => {
+  //   if (!selectedPatient) return;
 
-    setPatients((prev) => ({
-      ...prev,
-      [selectedPatient]: {
-        ...prev[selectedPatient],
-        [field]: value,
-        lastModified: new Date().toISOString(),
-      },
-    }));
-  };
+  //   setPatients((prev) => ({
+  //     ...prev,
+  //     [selectedPatient]: {
+  //       ...prev[selectedPatient],
+  //       [field]: value,
+  //       lastModified: new Date().toISOString(),
+  //     },
+  //   }));
+  // };
+
+const updatePatientInfo = (
+  field: 'age' | 'sex' | 'doctorHeartRate' | 'deviceHeartRate', 
+  value: string | number | null
+) => {
+  if (!selectedPatient) return;
+
+  setPatients((prev) => ({
+    ...prev,
+    [selectedPatient]: {
+      ...prev[selectedPatient],
+      [field]: value,
+      lastModified: new Date().toISOString(),
+    },
+  }));
+};
+
 
   const updateNotes = (content: string) => {
     setCurrentNotesContent(content);

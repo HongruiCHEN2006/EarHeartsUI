@@ -18,7 +18,11 @@ export interface Patient {
   note: string;
   waveform: number[] | null;
   recordingDate: string | null;
+  audioBlob?: Blob | null;
   lastModified: string | null;
+  deviceHeartRate?: number | null;
+  doctorHeartRate?: number | null;
+
 }
 
 export type PatientsMap = Record<string, Patient>;
@@ -31,7 +35,11 @@ export interface PatientContextType {
   addPatient: (name: string, age: string, sex: Sex | '') => void;
   deletePatient: (name: string) => void;
   selectPatient: (name: string, force?: boolean) => void;
-  updatePatientInfo: (field: 'age' | 'sex', value: string) => void;
+  // updatePatientInfo: (field: 'age' | 'sex', value: string) => void;
+  updatePatientInfo: (
+      field: 'age' | 'sex' | 'doctorHeartRate' | 'deviceHeartRate', 
+      value: any
+    ) => void;
   updateNotes: (content: string) => void;
   saveNotes: () => void;
   clearNotes: () => void;

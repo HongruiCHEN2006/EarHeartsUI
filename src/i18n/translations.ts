@@ -196,5 +196,6 @@ export const TRANSLATIONS: Translations = {
     confirm_delete_patient: 'Màbb nit "{}" ?',
     recording_timer: 'Jàppandi : {}s / 60s',
     recording_failed: 'Jàppandi dafa lajj : ',
+    
   },
 };

@@ -51,6 +51,8 @@ export function highOrderBandpassFilter(
   return filteredData;
 }
 
+
+
 function highPassFilterStage(
   data: number[],
   cutoffHz: number,
@@ -187,3 +189,13 @@ export function extractAndProcessMiddleSegment(
   }
 }
 
+export function estimateHeartRate(
+  waveform: number[],
+  sampleRate: number
+): number {
+
+
+
+
+  return 66666;
+}
