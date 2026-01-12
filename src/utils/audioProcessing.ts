@@ -189,13 +189,73 @@ export function extractAndProcessMiddleSegment(
   }
 }
 
+export function findPeaks(
+  data: number[],
+  minDistance: number,
+  threshold?: number
+): number[] {
+  if (data.length === 0) return [];
+
+  // --- 修复这里：不要使用 ...data ---
+  let dataMax = 0;
+  for (let i = 0; i < data.length; i++) {
+    const absVal = Math.abs(data[i]);
+    if (absVal > dataMax) dataMax = absVal;
+  }
+  // ------------------------------------
+
+  const effectiveThreshold = threshold ?? dataMax * 0.3;
+  const peaks: number[] = [];
+
+  for (let i = 1; i < data.length - 1; i++) {
+    if (
+      data[i] > data[i - 1] &&
+      data[i] > data[i + 1] &&
+      Math.abs(data[i]) > effectiveThreshold
+    ) {
+      if (peaks.length === 0 || i - peaks[peaks.length - 1] >= minDistance) {
+        peaks.push(i);
+      } else if (data[i] > data[peaks[peaks.length - 1]]) {
+        peaks[peaks.length - 1] = i;
+      }
+    }
+  }
+
+  return peaks;
+}
+
 export function estimateHeartRate(
   waveform: number[],
   sampleRate: number
 ): number {
-
-
-
-
-  return 66666;
+  // 使用绝对值来处理负峰值
+  const absWaveform = waveform.map(Math.abs);
+  
+  // 最小峰值间距（假设心率不会超过180 bpm）
+  // 180 bpm = 3 beats/sec，所以最小间距是 sampleRate / 3
+  const minPeakDistance = Math.floor(sampleRate / 3);
+  
+  // 检测峰值
+  const peaks = findPeaks(absWaveform, minPeakDistance);
+  
+  if (peaks.length < 2) {
+    // 峰值太少，无法估算心率
+    return 0;
+  }
+  
+  // 计算相邻峰值间的平均距离
+  const intervals: number[] = [];
+  for (let i = 1; i < peaks.length; i++) {
+    intervals.push(peaks[i] - peaks[i - 1]);
+  }
+  
+  // 计算平均间隔（以样本数为单位）
+  const avgInterval =
+    intervals.reduce((sum, val) => sum + val, 0) / intervals.length;
+  
+  // 转换为心率（每分钟心跳数）
+  const heartRate = (60 * sampleRate) / avgInterval;
+  
+  // 返回四舍五入的心率
+  return Math.round(heartRate);
 }

@@ -6,6 +6,8 @@ import {
   Sex,
 } from '../types';
 
+import { extractAndProcessMiddleSegment, estimateHeartRate } from '../utils/audioProcessing';
+
 const PatientContext = createContext<PatientContextType | undefined>(undefined);
 
 export function PatientProvider({ children }: { children: React.ReactNode }) {
@@ -140,21 +142,21 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
   //   }));
   // };
 
-const updatePatientInfo = (
-  field: 'age' | 'sex' | 'doctorHeartRate' | 'deviceHeartRate', 
-  value: string | number | null
-) => {
-  if (!selectedPatient) return;
+  const updatePatientInfo = (
+    field: 'age' | 'sex' | 'doctorHeartRate' | 'deviceHeartRate', 
+    value: string | number | null
+  ) => {
+    if (!selectedPatient) return;
 
-  setPatients((prev) => ({
-    ...prev,
-    [selectedPatient]: {
-      ...prev[selectedPatient],
-      [field]: value,
-      lastModified: new Date().toISOString(),
-    },
-  }));
-};
+    setPatients((prev) => ({
+      ...prev,
+      [selectedPatient]: {
+        ...prev[selectedPatient],
+        [field]: value,
+        lastModified: new Date().toISOString(),
+      },
+    }));
+  };
 
 
   const updateNotes = (content: string) => {
@@ -187,14 +189,34 @@ const updatePatientInfo = (
     );
   };
 
+  // const setWaveform = (waveform: number[]) => {
+  //   if (!selectedPatient) return;
+
+  //   setPatients((prev) => ({
+  //     ...prev,
+  //     [selectedPatient]: {
+  //       ...prev[selectedPatient],
+  //       waveform,
+  //       recordingDate: new Date().toISOString(),
+  //       lastModified: new Date().toISOString(),
+  //     },
+  //   }));
+  // };
+
   const setWaveform = (waveform: number[]) => {
     if (!selectedPatient) return;
+
+    const SAMPLE_RATE = 44100; 
+    const processedData = extractAndProcessMiddleSegment(waveform, SAMPLE_RATE);
+
+    const calculatedBpm = estimateHeartRate(processedData, SAMPLE_RATE);
 
     setPatients((prev) => ({
       ...prev,
       [selectedPatient]: {
         ...prev[selectedPatient],
         waveform,
+        deviceHeartRate: calculatedBpm > 0 ? calculatedBpm : null,
         recordingDate: new Date().toISOString(),
         lastModified: new Date().toISOString(),
       },
