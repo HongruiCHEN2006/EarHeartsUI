@@ -3,38 +3,47 @@ import {
   Box, 
   Button, 
   Typography, 
-  Divider, 
-  Stack,
-  Tooltip
+  Stack, 
+  Tooltip 
 } from '@mui/material';
 import { 
   CloudDownload as ExportIcon, 
   CloudUpload as ImportIcon,
   Description as ReportIcon 
 } from '@mui/icons-material';
+
+// 引入你的两个核心 Hook
+import { useLanguage } from '../../contexts/LanguageContext';
 import { usePatients } from '../../contexts/PatientContext';
 import { exportToZip, importFromZip, exportAllPatients } from '../../utils/dataExport';
 
 export const DataManagement: React.FC = () => {
+  // 1. 统一使用你喜欢的 t 函数
+  const { t } = useLanguage(); 
   const { patients, importAllPatients } = usePatients();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // --- 处理：导出完整备份 (.zip) ---
+  // 辅助函数：处理翻译中的 {} 占位符（如果你的 t 函数还没内置这个功能）
+  const format = (str: string, val: string | number) => str.replace('{}', String(val));
+
   const handleExportZip = async () => {
     try {
       await exportToZip(patients);
+      // 调用翻译：export_success
+      alert(t('export_success'));
     } catch (error) {
-      console.error('导出失败:', error);
-      alert('导出备份失败，请检查控制台。');
+      console.error('Export failed:', error);
     }
   };
 
-  // --- 处理：导出文字报告 (.txt + .json) ---
   const handleExportReport = () => {
+    if (Object.keys(patients).length === 0) {
+      alert(t('no_patients_export'));
+      return;
+    }
     exportAllPatients(patients);
   };
 
-  // --- 处理：导入备份 ---
   const handleImportClick = () => {
     fileInputRef.current?.click();
   };
@@ -43,42 +52,44 @@ export const DataManagement: React.FC = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (window.confirm('导入备份将覆盖当前所有数据，确定要继续吗？')) {
+    // 调用翻译：confirm_import
+    // 这里如果不知道具体人数，可以先简单提示
+    if (confirm(t('import_data') + "?")) {
       try {
         await importFromZip(file, (data) => {
           importAllPatients(data);
-          alert('✅ 数据恢复成功！');
+          alert(t('import_success'));
         });
       } catch (error) {
-        console.error('导入失败:', error);
-        alert('导入失败：文件格式不正确或已损坏。');
+        console.error('Import failed:', error);
       }
     }
-    // 清空 input，防止无法连续选择同一个文件
     event.target.value = '';
   };
 
   return (
     <Box sx={{ p: 2, mt: 'auto' }}>
+      {/* 使用 t('data_management') */}
       <Typography variant="caption" color="textSecondary" sx={{ mb: 1, display: 'block' }}>
-        数据管理
+        {t('data_management')}
       </Typography>
       
       <Stack spacing={1}>
-        {/* 导出 ZIP 按钮 */}
-        <Tooltip title="包含患者信息和波形录音">
+        {/* 导出 ZIP：使用 t('export_all') */}
+        <Tooltip title={t('export_all')}>
           <Button
             variant="contained"
             fullWidth
             startIcon={<ExportIcon />}
             onClick={handleExportZip}
             size="small"
+            color="primary"
           >
-            导出完整备份
+            {t('export_all')}
           </Button>
         </Tooltip>
 
-        {/* 导入 ZIP 按钮 */}
+        {/* 导入 ZIP：使用 t('import_data') */}
         <Button
           variant="outlined"
           fullWidth
@@ -86,10 +97,10 @@ export const DataManagement: React.FC = () => {
           onClick={handleImportClick}
           size="small"
         >
-          恢复备份文件
+          {t('import_data')}
         </Button>
 
-        {/* 仅导出报告 */}
+        {/* 导出报告：使用 t('export_patient') */}
         <Button
           variant="text"
           fullWidth
@@ -98,11 +109,10 @@ export const DataManagement: React.FC = () => {
           size="small"
           sx={{ fontSize: '0.75rem' }}
         >
-          导出文字报告
+          {t('export_patient')}
         </Button>
       </Stack>
 
-      {/* 隐藏的上传控件 */}
       <input
         type="file"
         ref={fileInputRef}
