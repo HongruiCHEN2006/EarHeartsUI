@@ -51,6 +51,7 @@ src/
 ├── utils/
 │   ├── audioProcessing.ts    # Signal processing utilities
 │   └── dataExport.ts         # Export/import utilities
+│   └── wavUtils.ts           # convert number[] into .wav file
 ├── types/
 │   └── index.ts              # TypeScript type definitions
 └── i18n/
