@@ -16,8 +16,9 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
   const [currentNotesContent, setCurrentNotesContent] = useState('');
   const [originalNotesContent, setOriginalNotesContent] = useState('');
   const [pendingPatientSwitch, setPendingPatientSwitch] = useState<string | null>(null);
+  
 
-  // Load from localStorage on mount
+  // 初始化加载
   useEffect(() => {
     try {
       const savedPatients = localStorage.getItem('heartRecorderPatients');
@@ -30,45 +31,31 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
         for (const name in parsedPatients) {
           patientsMap[name] = {
             ...parsedPatients[name],
-            waveform: null, // Audio data not restored from localStorage
+            notes: parsedPatients[name].notes || '', 
+            waveform: null,
           };
         }
-        
         setPatients(patientsMap);
       }
 
       if (savedSelected && savedPatients) {
-        const parsedPatients = JSON.parse(savedPatients);
-        if (parsedPatients[savedSelected]) {
-          setSelectedPatient(savedSelected);
-          setCurrentNotesContent(parsedPatients[savedSelected].note || '');
-          setOriginalNotesContent(parsedPatients[savedSelected].note || '');
-        }
+        setSelectedPatient(savedSelected);
       }
     } catch (error) {
       console.error('Error loading from localStorage:', error);
     }
   }, []);
 
-  // Save to localStorage whenever patients change
+  // 自动保存
   useEffect(() => {
     try {
-      const patientsForStorage: Record<string, Omit<Patient, 'waveform'> & { hasWaveform: boolean }> = {};
-      
+      const patientsForStorage: any = {};
       for (const name in patients) {
         patientsForStorage[name] = {
-          name: patients[name].name,
-          age: patients[name].age,
-          sex: patients[name].sex,
-          deviceHeartRate: patients[name].deviceHeartRate,
-          doctorHeartRate: patients[name].doctorHeartRate,
-          note: patients[name].note,
-          recordingDate: patients[name].recordingDate,
-          lastModified: patients[name].lastModified,
-          hasWaveform: !!patients[name].waveform,
+          ...patients[name],
+          waveform: null, // 录音不存本地
         };
       }
-      
       localStorage.setItem('heartRecorderPatients', JSON.stringify(patientsForStorage));
       if (selectedPatient) {
         localStorage.setItem('heartRecorderSelectedPatient', selectedPatient);
@@ -78,25 +65,37 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
     }
   }, [patients, selectedPatient]);
 
-  const addPatient = (name: string, age: string, sex: Sex | '') => {
-    if (patients[name]) {
-      throw new Error('Patient already exists');
+  // 同步当前笔记
+  useEffect(() => {
+    if (selectedPatient && patients[selectedPatient]) {
+      const note = patients[selectedPatient].notes || '';
+      setCurrentNotesContent(note);
+      setOriginalNotesContent(note);
+    } else {
+      setCurrentNotesContent('');
+      setOriginalNotesContent('');
     }
+  }, [selectedPatient, patients]);
 
+  // --- 修复 addPatient ---
+  const addPatient = (name: string, age: string, sex: Sex | '') => {
+    if (patients[name]) return;
+
+    // 关键：这里必须包含 Patient 接口定义的所有字段
     const newPatient: Patient = {
       name,
       age,
-      sex,
-      note: '',
+      sex: sex as Sex, // 强制断言，解决 "" 无法赋值给 Sex 的问题
+      notes: '',
       waveform: null,
+      deviceHeartRate: null,
+      doctorHeartRate: null,
       recordingDate: null,
       lastModified: new Date().toISOString(),
     };
 
     setPatients((prev) => ({ ...prev, [name]: newPatient }));
     setSelectedPatient(name);
-    setCurrentNotesContent('');
-    setOriginalNotesContent('');
   };
 
   const deletePatient = (name: string) => {
@@ -105,43 +104,19 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
       delete newPatients[name];
       return newPatients;
     });
-
-    if (selectedPatient === name) {
-      setSelectedPatient(null);
-      setCurrentNotesContent('');
-      setOriginalNotesContent('');
-    }
+    if (selectedPatient === name) setSelectedPatient(null);
   };
 
   const selectPatient = (name: string, force = false) => {
     if (name === selectedPatient) return;
-
     if (!force && hasUnsavedNotes()) {
       setPendingPatientSwitch(name);
       return;
     }
-
     setSelectedPatient(name);
-    const patient = patients[name];
-    if (patient) {
-      setCurrentNotesContent(patient.note || '');
-      setOriginalNotesContent(patient.note || '');
-    }
   };
 
-  // const updatePatientInfo = (field: 'age' | 'sex', value: string) => {
-  //   if (!selectedPatient) return;
-
-  //   setPatients((prev) => ({
-  //     ...prev,
-  //     [selectedPatient]: {
-  //       ...prev[selectedPatient],
-  //       [field]: value,
-  //       lastModified: new Date().toISOString(),
-  //     },
-  //   }));
-  // };
-
+  // --- 修复 updatePatientInfo：匹配 (field, value) 模式 ---
   const updatePatientInfo = (
     field: 'age' | 'sex' | 'doctorHeartRate' | 'deviceHeartRate', 
     value: string | number | null
@@ -158,57 +133,31 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
     }));
   };
 
-
-  const updateNotes = (content: string) => {
-    setCurrentNotesContent(content);
-  };
+  const updateNotes = (content: string) => setCurrentNotesContent(content);
 
   const saveNotes = () => {
     if (!selectedPatient) return;
-
     setPatients((prev) => ({
       ...prev,
       [selectedPatient]: {
         ...prev[selectedPatient],
-        note: currentNotesContent,
+        notes: currentNotesContent,
         lastModified: new Date().toISOString(),
       },
     }));
-
     setOriginalNotesContent(currentNotesContent);
   };
 
-  const clearNotes = () => {
-    setCurrentNotesContent('');
-  };
+  const clearNotes = () => setCurrentNotesContent('');
 
   const hasUnsavedNotes = (): boolean => {
-    return (
-      currentNotesContent !== originalNotesContent &&
-      currentNotesContent.trim() !== ''
-    );
+    return currentNotesContent !== originalNotesContent && currentNotesContent.trim() !== '';
   };
-
-  // const setWaveform = (waveform: number[]) => {
-  //   if (!selectedPatient) return;
-
-  //   setPatients((prev) => ({
-  //     ...prev,
-  //     [selectedPatient]: {
-  //       ...prev[selectedPatient],
-  //       waveform,
-  //       recordingDate: new Date().toISOString(),
-  //       lastModified: new Date().toISOString(),
-  //     },
-  //   }));
-  // };
 
   const setWaveform = (waveform: number[]) => {
     if (!selectedPatient) return;
-
     const SAMPLE_RATE = 44100; 
     const processedData = extractAndProcessMiddleSegment(waveform, SAMPLE_RATE);
-
     const calculatedBpm = estimateHeartRate(processedData, SAMPLE_RATE);
 
     setPatients((prev) => ({
@@ -221,6 +170,15 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
         lastModified: new Date().toISOString(),
       },
     }));
+  };
+
+  // --- 新增：批量导入功能 (ZIP 恢复核心) ---
+  const importAllPatients = (newPatients: PatientsMap) => {
+    setPatients(newPatients);
+    const names = Object.keys(newPatients);
+    if (names.length > 0) {
+      setSelectedPatient(names[0]);
+    }
   };
 
   const confirmSwitchWithSave = () => {
@@ -254,6 +212,7 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
         clearNotes,
         hasUnsavedNotes,
         setWaveform,
+        importAllPatients,
         pendingPatientSwitch,
         setPendingPatientSwitch,
         confirmSwitchWithSave,
@@ -267,9 +226,6 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
 
 export function usePatients(): PatientContextType {
   const context = useContext(PatientContext);
-  if (!context) {
-    throw new Error('usePatients must be used within a PatientProvider');
-  }
+  if (!context) throw new Error('usePatients must be used within a PatientProvider');
   return context;
 }
-

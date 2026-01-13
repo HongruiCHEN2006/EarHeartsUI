@@ -1,146 +1,115 @@
-import { useRef } from 'react';
-import { Box, Button, Typography, Stack } from '@mui/material';
-import { Download, Upload } from '@mui/icons-material';
+import React, { useRef } from 'react';
+import { 
+  Box, 
+  Button, 
+  Typography, 
+  Divider, 
+  Stack,
+  Tooltip
+} from '@mui/material';
+import { 
+  CloudDownload as ExportIcon, 
+  CloudUpload as ImportIcon,
+  Description as ReportIcon 
+} from '@mui/icons-material';
 import { usePatients } from '../../contexts/PatientContext';
-import { useLanguage } from '../../contexts/LanguageContext';
-import { exportPatient, exportAllPatients } from '../../utils/dataExport';
+import { exportToZip, importFromZip, exportAllPatients } from '../../utils/dataExport';
 
-export function DataManagement() {
-  const { patients, selectedPatient, addPatient } = usePatients();
-  const { t } = useLanguage();
+export const DataManagement: React.FC = () => {
+  const { patients, importAllPatients } = usePatients();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleExportPatient = () => {
-    if (!selectedPatient) {
-      alert(t('select_patient_warning'));
-      return;
+  // --- 处理：导出完整备份 (.zip) ---
+  const handleExportZip = async () => {
+    try {
+      await exportToZip(patients);
+    } catch (error) {
+      console.error('导出失败:', error);
+      alert('导出备份失败，请检查控制台。');
     }
-
-    const patient = patients[selectedPatient];
-    exportPatient(selectedPatient, patient);
-    alert(t('export_success'));
   };
 
-  const handleExportAll = () => {
-    if (Object.keys(patients).length === 0) {
-      alert(t('no_patients_export'));
-      return;
-    }
-
+  // --- 处理：导出文字报告 (.txt + .json) ---
+  const handleExportReport = () => {
     exportAllPatients(patients);
-    alert(t('export_success'));
   };
 
+  // --- 处理：导入备份 ---
   const handleImportClick = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
+    if (window.confirm('导入备份将覆盖当前所有数据，确定要继续吗？')) {
       try {
-        const importedData = JSON.parse(e.target?.result as string);
-
-        if (importedData.patients) {
-          // Import all patients
-          const importCount = Object.keys(importedData.patients).length;
-          if (
-            confirm(t('confirm_import').replace('{}', importCount.toString()))
-          ) {
-            let actualImported = 0;
-            for (const name in importedData.patients) {
-              try {
-                addPatient(
-                  name,
-                  importedData.patients[name].age || '',
-                  importedData.patients[name].sex || ''
-                );
-                // Update notes separately if needed
-                actualImported++;
-              } catch (err) {
-                // Patient already exists, skip
-              }
-            }
-            alert(`${t('import_success')} (${actualImported} patients)`);
-          }
-        } else if (importedData.name) {
-          // Import single patient
-          if (confirm(`Import patient "${importedData.name}"?`)) {
-            try {
-              addPatient(
-                importedData.name,
-                importedData.age || '',
-                importedData.sex || ''
-              );
-              alert(t('import_success'));
-            } catch (err) {
-              alert(t('patient_exists'));
-            }
-          }
-        } else {
-          alert('Invalid file format!');
-        }
+        await importFromZip(file, (data) => {
+          importAllPatients(data);
+          alert('✅ 数据恢复成功！');
+        });
       } catch (error) {
-        alert(
-          'Error importing file: ' +
-            (error instanceof Error ? error.message : 'Unknown error')
-        );
+        console.error('导入失败:', error);
+        alert('导入失败：文件格式不正确或已损坏。');
       }
-    };
-    reader.readAsText(file);
-
-    // Clear input to allow re-importing the same file
+    }
+    // 清空 input，防止无法连续选择同一个文件
     event.target.value = '';
   };
 
   return (
-    <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
-      <Typography variant="h6" color="primary" gutterBottom>
-        {t('data_management')}
+    <Box sx={{ p: 2, mt: 'auto' }}>
+      <Typography variant="caption" color="textSecondary" sx={{ mb: 1, display: 'block' }}>
+        数据管理
       </Typography>
-
+      
       <Stack spacing={1}>
-        <Button
-          variant="contained"
-          color="info"
-          startIcon={<Download />}
-          onClick={handleExportPatient}
-          fullWidth
-        >
-          {t('export_patient')}
-        </Button>
+        {/* 导出 ZIP 按钮 */}
+        <Tooltip title="包含患者信息和波形录音">
+          <Button
+            variant="contained"
+            fullWidth
+            startIcon={<ExportIcon />}
+            onClick={handleExportZip}
+            size="small"
+          >
+            导出完整备份
+          </Button>
+        </Tooltip>
 
-        <Button
-          variant="contained"
-          color="info"
-          startIcon={<Download />}
-          onClick={handleExportAll}
-          fullWidth
-        >
-          {t('export_all')}
-        </Button>
-
+        {/* 导入 ZIP 按钮 */}
         <Button
           variant="outlined"
-          startIcon={<Upload />}
-          onClick={handleImportClick}
           fullWidth
+          startIcon={<ImportIcon />}
+          onClick={handleImportClick}
+          size="small"
         >
-          {t('import_data')}
+          恢复备份文件
         </Button>
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json"
-          style={{ display: 'none' }}
-          onChange={handleFileImport}
-        />
+        {/* 仅导出报告 */}
+        <Button
+          variant="text"
+          fullWidth
+          startIcon={<ReportIcon />}
+          onClick={handleExportReport}
+          size="small"
+          sx={{ fontSize: '0.75rem' }}
+        >
+          导出文字报告
+        </Button>
       </Stack>
+
+      {/* 隐藏的上传控件 */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept=".zip"
+        style={{ display: 'none' }}
+      />
     </Box>
   );
-}
-
+};

@@ -15,12 +15,12 @@ export interface Patient {
   name: string;
   age: string;
   sex: Sex | '';
-  note: string;
+  notes: string;
   waveform: number[] | null;
   recordingDate: string | null;
   audioBlob?: Blob | null;
   lastModified: string | null;
-  deviceHeartRate?: number | null;
+  deviceHeartRate: number | null;
   doctorHeartRate?: number | null;
 
 }
@@ -42,6 +42,7 @@ export interface PatientContextType {
     ) => void;
   updateNotes: (content: string) => void;
   saveNotes: () => void;
+  importAllPatients: (newPatients: PatientsMap) => void;
   clearNotes: () => void;
   hasUnsavedNotes: () => boolean;
   setWaveform: (waveform: number[]) => void;
