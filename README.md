@@ -2,6 +2,10 @@
 
 A modern React TypeScript application for recording and analyzing heart sounds, featuring patient management, audio signal processing, and multi-language support.
 
+# Setup instruction:
+https://docs.google.com/document/d/1uEI_k8G2_eCKxglFCU0gR9Agm3fvKGn_Ce-ejZlZbJ8/edit?tab=t.0
+*Setup instructions apply only to the provided iPads with completed environments.
+
 ## Features
 
 - **Patient Management**: Add, edit, delete, and manage patient information
